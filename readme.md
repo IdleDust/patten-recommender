@@ -13,12 +13,6 @@ Install packages by
 
 Start the app by 
 
-  `cd patten-recommender/../`
-
-  `python -m patten-recommender`
-
-OR 
-
   `cd patten-recommender`
 
-  `python __main__.py`
+  `python server.py`
