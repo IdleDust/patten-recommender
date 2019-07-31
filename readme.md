@@ -11,8 +11,9 @@ Install packages by
 
 `pip install -r requirements.txt`
 
-Start the app by 
+Set the env variable
+`sudo ./setenv.sh`
 
-  `cd patten-recommender`
+Start the app by
 
-  `python server.py`
+`python manage.py runserver`

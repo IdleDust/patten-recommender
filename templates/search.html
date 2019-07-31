@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-  <section class="post-area section-gap">
+  <section class="post-area section-gap ">
     <div class="container">
       <div class="row justify-content-center d-flex">
         <div class="col-lg-10 post-list">
@@ -26,7 +26,9 @@
                     </div>
                     <ul class="btns">
                       <li><a href="#"><span class="lnr lnr-heart"></span></a></li>
-                      <li><a href="#">detail</a></li>
+
+{#                      PUT THE ITEM LINK HERE#}
+                      <li><a href="#" id="item_id0" class="single-post-link">detail</a></li>
                     </ul>
                   </div>
                   <p>A frequency modulated (coherent) laser detection and ranging system includes a
@@ -54,4 +56,12 @@
       </div>
     </div>
   </section>
+
+  <div class="row d-flex align-items-center justify-content-center">
+  <form action="/more" method="post" id="get-more-items">
+{#    <input type="text" name="unused" disabled>#}
+    <button type="submit" class="btn btn-info"> SAVE HISTORY | GET REFINED ITEMS</button>
+  </form>
+  </div>
 {% endblock %}
+

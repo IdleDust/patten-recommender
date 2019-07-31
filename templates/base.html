@@ -14,7 +14,11 @@
   <!-- meta character set -->
   <meta charset="UTF-8">
   <!-- Site Title -->
+  {% if title %}
+    <title>{{ title }}</title>
+  {% else %}
   <title>Patten Recommendation</title>
+  {% endif %}
 
   <link href="https://fonts.googleapis.com/css?family=Poppins:100,200,400,300,500,600,700" rel="stylesheet">
   <!-- CSS ============================================= -->
@@ -34,9 +38,16 @@
 <header id="header" id="home">
   <div class="container">
     <div class="row align-items-center justify-content-between d-flex">
-      <div id="logo">
-        <h2 class="text-white">Patten Recommendation</h2>
-      </div>
+      <div id="logo" class="text-white">Pattern Rec</div>
+
+        <nav id="nav-menu-container">
+          <ul class="nav-menu">
+{#            <li class="menu-active"><a href="index.html">Home</a></li>#}
+            <li><a class="ticker-btn" href="/register">Signup</a></li>
+            <li><a class="ticker-btn" href="/login">Login</a></li>
+          </ul>
+        </nav><!-- #nav-menu-container -->
+
     </div>
   </div>
 </header><!-- #header -->
@@ -109,6 +120,11 @@
   </div>
 </section>
 <!-- End banner Area -->
+<!-- Start post Area -->
+{% block register %}{% endblock %}
+{% block signin %}{% endblock %}
+<!-- End post Area -->
+
 
 <!-- Start post Area -->
 {% block content %}{% endblock %}
@@ -196,6 +212,8 @@
 <script src="js/parallax.min.js"></script>
 <script src="js/mail-script.js"></script>
 <script src="js/main.js"></script>
+<script src="js/js.cookie.js"></script>
+<script src="js/patent.js"></script>
 </body>
 </html>
 
