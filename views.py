@@ -92,6 +92,7 @@ def save_clicked_items():
     if 'clicked_items' in request.cookies:
         inputs = request.cookies['clicked_items']
         clicked_items = inputs.split('%2C')[:-1]
+        print(clicked_items)
         # GET MORE ITEMS FROM RECOMMENDATION SERVICE
         more_items = _refined_recommend_items("current_user", clicked_items)
         response = make_response(render_template('search.html', items=more_items))
@@ -110,5 +111,8 @@ def _get_form_fields():
 
 
 def _refined_recommend_items(username, clicked_items):
-    return [{}, {}, {}, {}]
+    result = list()
+    for i in range(len(clicked_items)):
+        result.append({})
+    return result
 
