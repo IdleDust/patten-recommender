@@ -33,13 +33,13 @@ class User(db.Model, UserMixin):
     def verify_password(self, password):
         if self.password is None:
             return False
-        return password == self.password
+        return password == self.get_password()
 
     def get_password(self):
         try:
-            res = db.query.filter_by(self.username).first().password
+            res = db.query.filter_by(username=self.username).first().password
         except Exception:
-            return False, "Error"
+            return False
         return res
 
 

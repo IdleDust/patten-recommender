@@ -6,6 +6,9 @@ Recommendation system powered by recommendation models.
 # Dependencies
 * Python 3.7
 * flask
+* sqlite
+* pandas
+
 
 Install packages by
 
@@ -14,6 +17,8 @@ Install packages by
 Set the env variable
 `sudo ./setenv.sh`
 
-Start the app by
+Initialize the sqlite db by
+`python manage.py initdb`
 
+Start the app by
 `python manage.py runserver`

@@ -9,10 +9,10 @@ from application import app, db
 from recommender import hybrid_pipeline
 from recommender import user_based
 from recommender import content_based_revised
+from recommender import item_based
 
 # use login manager to manage session
 login_manager = LoginManager()
-# login_manager.session_protection = 'strong'
 login_manager.login_view = 'login'
 login_manager.init_app(app=app)
 
@@ -33,7 +33,12 @@ def login():
         print(user_name, password)
 
         user = User(user_name, password)
-        if user.verify_password(password):
+        temp_users = User.query.filter_by(username=user_name).all()
+        if not (temp_users and len(temp_users) > 0):
+            error = "username does not exist!"
+            return render_template('login.html', title="Log In", error=error)
+
+        if password == temp_users[0].password:
             login_user(user)
             flash("{0} were successfully logged in.".format(current_user.username))
             return redirect(url_for('homepage', title="{0}".format(user.username)))
@@ -74,10 +79,11 @@ def register():
 @login_required
 def logout():
     print("{0} is authenticated {1}".format(current_user, current_user.is_authenticated))
+    username = get_current_username()
     logout_user()
     message = "{0} is authenticated {1}".format(current_user, current_user.is_authenticated)
     print(message)
-    flash(message)
+    flash("{0} has been logged out. ".format(username))
     return redirect(url_for('login'))
 
 
@@ -103,6 +109,7 @@ def search():
             assignee=inputs[common.ASSIGNEE],
             sentence=inputs[common.KEYWORDS])
         result = result.values.tolist()[:10]
+        print("\n hybrid result {0}\n\n".format(result))
         headline = "Top recommended patents"
         return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES,
                                page_headline=headline,
@@ -114,13 +121,13 @@ def search():
 @app.route('/more', methods=['POST'])
 @login_required
 def save_clicked_items():
+    username = get_current_username()
     if 'clicked_items' in request.cookies:
         items_in_string = request.cookies['clicked_items']
         clicked_items = get_distinct_items(items_in_string, '%2C')
         print(clicked_items)
         print("current user {0}".format(current_user))
 
-        username = current_user.username
         clicks = ClickHistory.query.filter_by(username=username).all()
         history_patent_ids = {click.patent_id for click in clicks}
         print("clickes type: {0} value: {1}".format(type(clicks), clicks))
@@ -131,39 +138,51 @@ def save_clicked_items():
                 db.session.add(click)
                 db.session.commit()
 
-        history = get_user_click_history()
-        print(history)
-        print("===============\n")
+    history = get_user_click_history()
+    print(history)
+    print("===============\n")
 
-        # more_items = user_based.user_based_recommender(username, history)
-        more_items = _refined_recommend_items(username, history)
-        print("{0} {1}".format(type(more_items), more_items))
-        headline = "Refined recommendations based on {0}'s click history.".format(get_current_username())
-        response = make_response(render_template('search.html',
-                                                 items=more_items,
-                                                 CPC_VALUES=common.CPC_VALUES,
-                                                 username=get_current_username(),
-                                                 page_headline=headline
-                                                 ))
-        response.delete_cookie('clicked_items', path='/')
-        return response
-    return redirect('/')
+    result = user_based.search_similar_user(username, history).values.tolist()
+    print("{0} {1}".format(type(result), result ))
+    headline = "Refined recommendations based on {0}'s click history.".format(get_current_username())
+
+    response = make_response(render_template('search.html',
+                                             items=result ,
+                                             CPC_VALUES=common.CPC_VALUES,
+                                             username=get_current_username(),
+                                             page_headline=headline
+                                             ))
+    response.delete_cookie('clicked_items', path='/')
+    return response
 
 
 @app.route('/similar', methods=['GET'])
 def recommend_similar_patents():
     patent_id = request.args.get('patent_id')
     if patent_id:
-        # result = content_based_revised.tfidf_similarity(int(patent_id)).values.to_list()[:10]
         result = content_based_revised.tfidf_similarity(int(patent_id))
-        result = result.tolist()
-        print("{0} {1}".format(type(result), result))
-        page_headline = "Similar patents for patent id {0}: ".format(patent_id)
+        result = result.values.tolist()
+        page_headline = "Similar patents for patent id {0} based on Content(TF_IDF) ".format(patent_id)
         return render_template('search.html', items=result,
                                CPC_VALUES=common.CPC_VALUES,
                                username=get_current_username(),
                                page_headline=page_headline)
-    return
+    return redirect(url_for('homepage'))
+
+
+@app.route('/citation', methods=['GET'])
+def recommend_related_items_based_on_citations():
+    patent_id = request.args.get('patent_id')
+    if patent_id:
+        result = item_based.search_similar_item_citation(patent_id)
+        print("\n\n item based result: {0}".format(result))
+        result = result.values.tolist()
+        page_headline = "Related patents for patent_id {0} (Item based Collaborative Filtering) ".format(patent_id)
+        return render_template('search.html', items=result,
+                               CPC_VALUES=common.CPC_VALUES,
+                               username=get_current_username(),
+                               page_headline=page_headline)
+    return redirect(url_for('homepage'))
 
 
 def _get_form_fields():

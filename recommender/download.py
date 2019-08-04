@@ -2,7 +2,10 @@
 # coding: utf-8
 
 # In[ ]:
-
+import pandas as pd
+import numpy as np
+import re
+import nltk
 
 # content-based method pre-processing: cb_download()
 # knowledge-based method pre-processing: kb_download()
@@ -46,3 +49,6 @@ def kb_download():
     law = pd.read_csv("Data/law_cleaned.csv").drop(['Unnamed: 0'], axis=1)
     asi = pd.read_csv("Data/asi_cleaned.csv").drop(['Unnamed: 0'], axis=1)
 
+
+if __name__ == '__main__':
+    nltk.download()
