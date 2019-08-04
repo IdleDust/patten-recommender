@@ -26,10 +26,6 @@ class User(db.Model, UserMixin):
         """Return the email address to satisfy Flask-Login's requirements."""
         return self.username
 
-    def is_authenticated(self):
-        """Return True if the user is authenticated."""
-        return True
-
     def is_anonymous(self):
         """False, as anonymous users aren't supported."""
         return False
@@ -45,3 +41,15 @@ class User(db.Model, UserMixin):
         except Exception:
             return False, "Error"
         return res
+
+
+class ClickHistory(db.Model):
+    __tablename__ = 'click'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, db.ForeignKey('user.username'))
+    patent_id = db.Column(db.String)
+
+    def __init__(self, username, patent_id):
+        self.username = username
+        self.patent_id = patent_id

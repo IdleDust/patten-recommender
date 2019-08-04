@@ -4,11 +4,11 @@ from flask_login import login_user, login_required, logout_user
 from flask_login import LoginManager, current_user
 # from user import LoginForm, User
 from login_form import LoginForm
-from models import User
+from models import User, ClickHistory
 import util
 from application import app, db
-# from recommender import content_based
 from recommender import hybrid_pipeline
+from recommender import user_based
 
 # use login manager to manage session
 login_manager = LoginManager()
@@ -54,11 +54,13 @@ def register():
     if req_json['password'] != "" and req_json['username'] != "":
         user = User(req_json['username'], req_json['password'])
         print(user)
-        status, message = api.add_user(user)
-        if status:
+        try:
+            db.session.add(user)
+            db.session.commit()
             return redirect(url_for('login'))
-        else:
-            return render_template('register.html', warning=None)
+        except Exception as e:
+            print(e)
+            return render_template('register.html', warning=str(e))
     else:
         warning = "Username and password is empty"
         return render_template('register.html', title="Get Code", warning=warning)
@@ -75,15 +77,14 @@ def logout():
 
 @app.route("/")
 def homepage():
-    items = []
-    return render_template('search.html', items=items)
+    print("current user {0} ".format(current_user))
+    return render_template('search.html')
 
 
 @app.route('/search', methods=['POST', 'GET'])
 def search():
     if request.method == 'POST':
         inputs = _get_form_fields()
-        print('/n')
         print({"inputs": inputs})
         result = hybrid_pipeline.hybrid_pipe(
             patent_id=None,
@@ -96,20 +97,36 @@ def search():
             assignee=inputs[common.ASSIGNEE],
             sentence=inputs[common.KEYWORDS])
         result = result.values.tolist()[:10]
-        # print("result {0} {1}".format(type(result), result))
+        # for patent in result:
+        #     print("pattent: {0}".format(patent))
         return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES)
     else:
         return redirect(url_for('homepage'))
 
 
 @app.route('/more', methods=['POST'])
+# @login_required
 def save_clicked_items():
     if 'clicked_items' in request.cookies:
         items_in_string = request.cookies['clicked_items']
         clicked_items = get_distinct_items(items_in_string, '%2C')
         print(clicked_items)
-        # GET MORE ITEMS FROM RECOMMENDATION SERVICE
-        more_items = _refined_recommend_items("current_user", clicked_items)
+        print("current user {0}".format(current_user))
+
+        for patent in clicked_items:
+            click = ClickHistory(current_user.username, patent)
+            db.session.add(click)
+            db.session.commit()
+
+        username = current_user.username
+        clicks = ClickHistory.query.filter_by(username=username).all()
+        print("{0} {1}".format(type(clicks), clicks))
+
+        history = get_user_click_history()
+        print(history)
+        print("===============\n")
+        more_items = user_based.user_based_recommender(username, history)
+        print("{0} {1}".format(type(more_items), more_items))
         response = make_response(render_template('search.html', items=more_items, CPC_VALUES=common.CPC_VALUES))
         response.delete_cookie('clicked_items', path='/')
         return response
@@ -138,4 +155,15 @@ def get_distinct_items(items_in_string, delimiter):
     return list(set(items))
 
 
-
+def get_user_click_history():
+    all_users = User.query.all()
+    print(all_users)
+    click_history = dict()
+    if all_users:
+        for user in all_users:
+            username = user.username
+            clicks = ClickHistory.query.filter_by(username=username).all()
+            patent_ids = {click.patent_id for click in clicks if clicks}
+            if len(patent_ids) > 0:
+                click_history[username] = patent_ids
+    return click_history

@@ -34,3 +34,4 @@ psycopg2==2.7.1
 pandas
 numpy
 nltk
+scipy

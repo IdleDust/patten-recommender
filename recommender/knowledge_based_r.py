@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[21]:
+# In[ ]:
 
 
 '''
 Function Instruction
 
-hybrid_pipe(patent_id, after, before, kind, cpc, inventor,lawyer,assignee,sentence) --
+search_patent(patent_id, after, before, kind, cpc, inventor,lawyer,assignee) --
     searching patent by requirements. 
     patent_id = id number of patent (int) 
     after = application date starting after yyyy-mm-dd (string, format:'yyyy-mm-dd')
@@ -15,29 +15,24 @@ hybrid_pipe(patent_id, after, before, kind, cpc, inventor,lawyer,assignee,senten
     kind = patent kind (A/B1/B2) 
     cpc = cpc section (string)
     inventor, lawyer, assignee = names (string)
-    sentence = keywords (string)
     
     Any of above fields could be empty.
     
-Example: hybrid_pipe(None, None , None, 'B2', 'A', None, None, None, 'molecule')
+Example: search_patent(None, '1980-10-1', None, 'B2', 'G', 'Joseph', None, None)
 
 '''
 
 
-# In[25]:
+# In[46]:
 
 
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import re
-import nltk
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from functools import partial
 
 
-# In[26]:
+# In[6]:
 
 
 dfk = pd.read_csv("recommender/Data/all_combined.csv").drop(['Unnamed: 0'], axis=1)
@@ -45,32 +40,8 @@ inv = pd.read_csv("recommender/Data/inv_cleaned.csv").drop(['Unnamed: 0'], axis=
 law = pd.read_csv("recommender/Data/law_cleaned.csv").drop(['Unnamed: 0'], axis=1)
 asi = pd.read_csv("recommender/Data/asi_cleaned.csv").drop(['Unnamed: 0'], axis=1)
 
-df = pd.read_csv("recommender/Data/all_combined.csv").drop(['Unnamed: 0'], axis=1)
-dft = df.copy()
-stop = stopwords.words('english')
 
-dft['title'] = dft['title'].str.replace('\d+', '')
-dft['title'] = dft['title'].str.split(' ').apply(lambda x: [item for item in x if item not in stop])
-dft['title']=dft['title'].apply(', '.join)
-v = TfidfVectorizer()
-x = v.fit_transform(dft['title'])
-dftx = pd.DataFrame(x.toarray(), columns=v.get_feature_names())
-tfidf= pd.concat([df, dftx], axis=1)
-
-dft['abstract'] = dft['abstract'].str.replace('\d+', '')
-dft['abstract'] = dft['abstract'].str.split(' ').apply(lambda x: [item for item in x if item not in stop])
-dft['abstract'] = dft['abstract'].apply(', '.join)
-x1 = v.fit_transform(dft['abstract'])
-dftx1 = pd.DataFrame(x1.toarray(), columns=v.get_feature_names())
-tfidf1= pd.concat([df, dftx1], axis=1)
-
-sim_t = cosine_similarity(dftx)
-sim_a = cosine_similarity(dftx1)
-word_list_title = dftx.columns.get_values().tolist()
-word_list_abstract = dftx1.columns.get_values().tolist()
-
-
-# In[27]:
+# In[92]:
 
 
 def search_id(id):
@@ -191,57 +162,4 @@ def search_patent(patent_id, after, before, kind, cpc, inventor,lawyer,assignee)
     
     temp = find_by_id(res)
     return temp
-
-def tfidf_weighted(word):
-    temp = df.copy()
-    word = word.lower()
-    
-    if word in word_list_abstract:
-        temp_a = tfidf1.sort_values(by=word , ascending=False)[[word]]
-        temp['result_a'] = temp_a[[word]]
-    else:
-        temp['result_a'] = 0.0
-        
-    if word in word_list_title:
-        temp_t = tfidf.sort_values(by=word , ascending=False)[[word]]
-        temp['result_t'] = temp_t[[word]]
-    else:
-        temp['result_t'] = 0.0
-    
-    temp['result_weighted'] = 0.8 * temp['result_t'] + 0.2 * temp['result_a']
-    temp = temp.sort_values(by=['result_weighted'] , ascending=False)
-    #temp = temp[(temp['result_weighted'] > 0)]
-    temp = temp.drop(columns=['result_t', 'result_a'])
-    
-    return temp
-
-
-# In[28]:
-
-
-def hybrid_pipe(patent_id, after, before, kind, cpc, inventor,lawyer,assignee,sentence):
-    cascade = search_patent(patent_id, after, before, kind, cpc, inventor,lawyer,assignee)
-    #cascade = temp['id'].tolist()
-    if sentence == None:
-        res = cascade.copy()
-    else:
-        wordlist = re.sub("[^\w]", " ",  sentence).split()
-        temp = cascade.copy()
-        for i in range(len(wordlist)):
-            temp[wordlist[i]] = tfidf_weighted(wordlist[i])['result_weighted']
-    
-        temp.loc[:,'Total'] = temp.sum(axis=1)
-        temp = temp[['Total']]
-    
-        res = pd.concat([df, temp], axis=1).sort_values(by="Total" , ascending=False)
-        res = res[(res['Total'] > 0)]
-    
-    return res
-    
-
-
-# In[ ]:
-
-
-
 

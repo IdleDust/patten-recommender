@@ -13,12 +13,15 @@
                 <div class="details">
                   <div class="title d-flex flex-row justify-content-between">
                     <div class="titles">
-                      <a href="http://www.google.com/{{ item[0] }}" class="single-post-link"><h4 id="{{ item[0] }}">{{ item[3] }}</h4></a>
+                      <a href="http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&Sect2=HITOFF&d=PALL&p=1&u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&r=1&f=G&l=50&s1={{ item[0] }}.PN.&OS=PN/{{ item[0] }}&RS=PN/{{ item[0] }}"
+                         class="single-post-link">
+                        <h4 id="{{ item[0] }}">{{ item[3] }}</h4>
+                      </a>
                       <h6>{{ item[2] }}</h6>
                     </div>
                     <ul class="btns inline list-inline">
 {#                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">View Similar</a></li>#}
-                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">View Detail</a></li>
+                      <li><a href="/similar?{{ item[0] }}">View Similar</a></li>
                     </ul>
                   </div>
                   <p class=""><span class="lnr lnr-database"></span> Inventors: {{ item[15][2:-2] }}</p>
