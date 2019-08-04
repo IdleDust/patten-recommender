@@ -21,3 +21,6 @@ __pycache__/
 # IDEA
 .idea/
 .DS_Store
+
+# DATA
+recommender/Data/*
