@@ -1,14 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, json, flash, make_response
+from flask import render_template, request, redirect, url_for, flash, make_response
 import common
 from flask_login import login_user, login_required, logout_user
 from flask_login import LoginManager, current_user
-# from user import LoginForm, User
 from login_form import LoginForm
 from models import User, ClickHistory
 import util
 from application import app, db
 from recommender import hybrid_pipeline
 from recommender import user_based
+from recommender import content_based_revised
 
 # use login manager to manage session
 login_manager = LoginManager()
@@ -20,13 +20,11 @@ login_manager.init_app(app=app)
 # The callback to reload User object.
 @login_manager.user_loader
 def load_user(user_id):
-    # return User.get(user_id)
     return User.query.get(user_id)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # print(this_function_name)
     if request.method == 'POST':
         form = LoginForm()
         user_name = request.form.get('username', None)
@@ -37,26 +35,32 @@ def login():
         user = User(user_name, password)
         if user.verify_password(password):
             login_user(user)
-            return redirect(url_for('homepage', title="logged in as {0}".format(user.username)))
+            flash("{0} were successfully logged in.".format(current_user.username))
+            return redirect(url_for('homepage', title="{0}".format(user.username)))
         else:
-            flash("username and password do not match!")
-            return render_template('login.html', title="Log In")
+            error = "username and password do not match!"
+            return render_template('login.html', title="Log In", error=error)
     return render_template('login.html', title="Log In")
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # print(this_function_name)
     if request.method == 'GET':
         return render_template('register.html', title='Register Your Account')
 
-    req_json = util.request_form_to_json(request)
-    if req_json['password'] != "" and req_json['username'] != "":
-        user = User(req_json['username'], req_json['password'])
+    inputs = util.request_form_to_json(request)
+    if inputs['password'] != "" and inputs['username'] != "":
+        user = User(inputs['username'], inputs['password'])
         print(user)
+        existed_users = User.query.filter_by(username=inputs['username']).all()
+        if len(existed_users) > 0:
+            message = "{} already existed in db.".format(inputs['username'])
+            flash("{} already existed in db.".format(inputs['username']))
+            return render_template('register.html', warning=message)
         try:
             db.session.add(user)
             db.session.commit()
+            flash("{0} saved successfully.".format(user.username))
             return redirect(url_for('login'))
         except Exception as e:
             print(e)
@@ -71,14 +75,16 @@ def register():
 def logout():
     print("{0} is authenticated {1}".format(current_user, current_user.is_authenticated))
     logout_user()
-    print("{0} is authenticated {1}".format(current_user, current_user.is_authenticated))
+    message = "{0} is authenticated {1}".format(current_user, current_user.is_authenticated)
+    print(message)
+    flash(message)
     return redirect(url_for('login'))
 
 
 @app.route("/")
 def homepage():
     print("current user {0} ".format(current_user))
-    return render_template('search.html')
+    return render_template('search.html', username=get_current_username())
 
 
 @app.route('/search', methods=['POST', 'GET'])
@@ -97,15 +103,16 @@ def search():
             assignee=inputs[common.ASSIGNEE],
             sentence=inputs[common.KEYWORDS])
         result = result.values.tolist()[:10]
-        # for patent in result:
-        #     print("pattent: {0}".format(patent))
-        return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES)
+        headline = "Top recommended patents"
+        return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES,
+                               page_headline=headline,
+                               username=get_current_username)
     else:
         return redirect(url_for('homepage'))
 
 
 @app.route('/more', methods=['POST'])
-# @login_required
+@login_required
 def save_clicked_items():
     if 'clicked_items' in request.cookies:
         items_in_string = request.cookies['clicked_items']
@@ -113,24 +120,50 @@ def save_clicked_items():
         print(clicked_items)
         print("current user {0}".format(current_user))
 
-        for patent in clicked_items:
-            click = ClickHistory(current_user.username, patent)
-            db.session.add(click)
-            db.session.commit()
-
         username = current_user.username
         clicks = ClickHistory.query.filter_by(username=username).all()
-        print("{0} {1}".format(type(clicks), clicks))
+        history_patent_ids = {click.patent_id for click in clicks}
+        print("clickes type: {0} value: {1}".format(type(clicks), clicks))
+
+        for patent_id in clicked_items:
+            if patent_id not in history_patent_ids:
+                click = ClickHistory(current_user.username, patent_id)
+                db.session.add(click)
+                db.session.commit()
 
         history = get_user_click_history()
         print(history)
         print("===============\n")
-        more_items = user_based.user_based_recommender(username, history)
+
+        # more_items = user_based.user_based_recommender(username, history)
+        more_items = _refined_recommend_items(username, history)
         print("{0} {1}".format(type(more_items), more_items))
-        response = make_response(render_template('search.html', items=more_items, CPC_VALUES=common.CPC_VALUES))
+        headline = "Refined recommendations based on {0}'s click history.".format(get_current_username())
+        response = make_response(render_template('search.html',
+                                                 items=more_items,
+                                                 CPC_VALUES=common.CPC_VALUES,
+                                                 username=get_current_username(),
+                                                 page_headline=headline
+                                                 ))
         response.delete_cookie('clicked_items', path='/')
         return response
     return redirect('/')
+
+
+@app.route('/similar', methods=['GET'])
+def recommend_similar_patents():
+    patent_id = request.args.get('patent_id')
+    if patent_id:
+        # result = content_based_revised.tfidf_similarity(int(patent_id)).values.to_list()[:10]
+        result = content_based_revised.tfidf_similarity(int(patent_id))
+        result = result.tolist()
+        print("{0} {1}".format(type(result), result))
+        page_headline = "Similar patents for patent id {0}: ".format(patent_id)
+        return render_template('search.html', items=result,
+                               CPC_VALUES=common.CPC_VALUES,
+                               username=get_current_username(),
+                               page_headline=page_headline)
+    return
 
 
 def _get_form_fields():
@@ -157,7 +190,6 @@ def get_distinct_items(items_in_string, delimiter):
 
 def get_user_click_history():
     all_users = User.query.all()
-    print(all_users)
     click_history = dict()
     if all_users:
         for user in all_users:
@@ -167,3 +199,7 @@ def get_user_click_history():
             if len(patent_ids) > 0:
                 click_history[username] = patent_ids
     return click_history
+
+
+def get_current_username():
+    return current_user.username if current_user.is_authenticated else None

@@ -3,6 +3,11 @@
   <section class="container">
     <div class="container">
       <form method="post" action="{{ url_for('login') }}">
+
+        {% if error %}
+          <p class=error><strong>Error:</strong> {{ error }}
+        {% endif %}
+
         <div class="form-group col-md-10">
           <label>Username </label>
           <input type="text" class="form-control" name="username" placeholder="Username or Email">

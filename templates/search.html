@@ -5,6 +5,9 @@
     <div class="container">
       <div class="row justify-content-center d-flex">
         <div class="col-lg-11 post-list">
+        {% if page_headline %}
+        <h4 class="text-italic">{{ page_headline }}</h4>
+        {% endif %}
 
           {% if items %}
             {% for item in items %}
@@ -21,7 +24,7 @@
                     </div>
                     <ul class="btns inline list-inline">
 {#                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">View Similar</a></li>#}
-                      <li><a href="/similar?{{ item[0] }}">View Similar</a></li>
+                      <li><a href="/similar?patent_id={{ item[0] }}">View Similar</a></li>
                     </ul>
                   </div>
                   <p class=""><span class="lnr lnr-database"></span> Inventors: {{ item[15][2:-2] }}</p>
@@ -42,7 +45,7 @@
               {% endif %}
             {% endfor %}
           {% else %}
-            <p class="info">0 results found.</p>
+{#            <p class="info">0 results found.</p>#}
           {% endif %}
 
 
@@ -53,7 +56,7 @@
 
   <div class="row d-flex align-items-center justify-content-center">
   <form action="/more" method="post" id="get-more-items">
-    <button type="submit" class="btn btn-info"> SAVE HISTORY | GET REFINED ITEMS</button>
+    <button type="submit" class="btn btn-primary"> SAVE HISTORY | GET REFINED ITEMS</button>
   </form>
   </div>
 {% endblock %}
