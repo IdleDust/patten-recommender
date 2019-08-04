@@ -4,48 +4,39 @@
   <section class="post-area section-gap ">
     <div class="container">
       <div class="row justify-content-center d-flex">
-        <div class="col-lg-10 post-list">
+        <div class="col-lg-11 post-list">
 
           {% if items %}
             {% for item in items %}
+              {% if item %}
               <div class="single-post d-flex flex-row">
-                <div class="thumb">
-                  <img src="img/post.png" alt="">
-                  <ul class="tags">
-                    <li><a href="#">Type</a></li>
-                    <li><a href="#">CPC Kind</a></li>
-                    <li><a href="#">Group</a></li>
-                  </ul>
-                </div>
-
                 <div class="details">
                   <div class="title d-flex flex-row justify-content-between">
                     <div class="titles">
-                      <a href="single.html"><h4>Sack handling device</h4></a>
-                      <h6>A frequency modulated (coherent)</h6>
+                      <a href="http://www.google.com/{{ item[0] }}" class="single-post-link"><h4 id="{{ item[0] }}">{{ item[3] }}</h4></a>
+                      <h6>{{ item[2] }}</h6>
                     </div>
-                    <ul class="btns">
-                      <li><a href="#"><span class="lnr lnr-heart"></span></a></li>
-
-{#                      PUT THE ITEM LINK HERE#}
-                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">detail</a></li>
+                    <ul class="btns inline list-inline">
+{#                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">View Similar</a></li>#}
+                      <li><a href="http://www.google.com" id="item_id0" class="single-post-link">View Detail</a></li>
                     </ul>
                   </div>
-                  <p>A frequency modulated (coherent) laser detection and ranging system includes a
-                    read-out integrated
-                    circuit formed with a two-dimensional array of detector elements each including
-                    a photosensitive
-                    region receiving both return light reflected from a target and light from a
-                    local oscillator,
-                    and local processing circuitry sampling the output of the photosensitive region
-                    four times during
-                    each sample period clock cycle to obtain quadrature components. </p>
-                  <h5>Inventor: John Kennedy</h5>
-                  <p class=""><span class="lnr lnr-map"></span> Date: 2006-04-01 </p>
-                  <p class=""><span class="lnr lnr-database"></span> Lawyer </p>
-                  <p class=""><span class="lnr lnr-database"></span> Assignee </p>
+                  <p class=""><span class="lnr lnr-database"></span> Inventors: {{ item[15][2:-2] }}</p>
+                  <p class=""><span class="lnr lnr-database"></span> Date: {{ item[1] }}</p>
+                  <p class=""><span class="lnr lnr-database"></span> Lawyers: {{ item[16][4:-2] }}</p>
+                  <p class=""><span class="lnr lnr-database"></span> Assignee: {{ item[17][4:-2] }}</p>
+                  <span class="lnr lnr-database"></span>CPC:
+                  {% for i in range(6, 15) %}
+                    {% if item[i] == 1.0 %}
+                      <a class="btn btn-info">{{ CPC_VALUES[i-6][0] }}</a>
+                      {% endif %}
+                    {% endfor %}
+
                 </div>
               </div>
+              {% else %}
+                <p>0 results found.</p>
+              {% endif %}
             {% endfor %}
           {% else %}
             <p class="info">0 results found.</p>
@@ -59,7 +50,6 @@
 
   <div class="row d-flex align-items-center justify-content-center">
   <form action="/more" method="post" id="get-more-items">
-{#    <input type="text" name="unused" disabled>#}
     <button type="submit" class="btn btn-info"> SAVE HISTORY | GET REFINED ITEMS</button>
   </form>
   </div>

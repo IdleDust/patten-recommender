@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, json, flash, make_response
 import common
-import os, sys
 from flask_login import login_user, login_required, logout_user
 from flask_login import LoginManager, current_user
 # from user import LoginForm, User
@@ -8,6 +7,8 @@ from login_form import LoginForm
 from models import User
 import util
 from application import app, db
+# from recommender import content_based
+from recommender import hybrid_pipeline
 
 # use login manager to manage session
 login_manager = LoginManager()
@@ -57,7 +58,7 @@ def register():
         if status:
             return redirect(url_for('login'))
         else:
-            return render_template('register.html', title="Get Code", warning=message)
+            return render_template('register.html', warning=None)
     else:
         warning = "Username and password is empty"
         return render_template('register.html', title="Get Code", warning=warning)
@@ -74,28 +75,42 @@ def logout():
 
 @app.route("/")
 def homepage():
-    items = [{}, {}, {}]
+    items = []
     return render_template('search.html', items=items)
 
 
-@app.route('/search', methods=['POST'])
+@app.route('/search', methods=['POST', 'GET'])
 def search():
     if request.method == 'POST':
         inputs = _get_form_fields()
-        return str(inputs)
+        print('/n')
+        print({"inputs": inputs})
+        result = hybrid_pipeline.hybrid_pipe(
+            patent_id=None,
+            after=inputs[common.AFTER],
+            before=inputs[common.BEFORE],
+            kind=inputs[common.KIND],
+            cpc=inputs[common.CPC],
+            inventor=inputs[common.INVENTOR],
+            lawyer=inputs[common.LAWYER],
+            assignee=inputs[common.ASSIGNEE],
+            sentence=inputs[common.KEYWORDS])
+        result = result.values.tolist()[:10]
+        # print("result {0} {1}".format(type(result), result))
+        return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES)
     else:
-        return "hello world"
+        return redirect(url_for('homepage'))
 
 
 @app.route('/more', methods=['POST'])
 def save_clicked_items():
     if 'clicked_items' in request.cookies:
-        inputs = request.cookies['clicked_items']
-        clicked_items = inputs.split('%2C')[:-1]
+        items_in_string = request.cookies['clicked_items']
+        clicked_items = get_distinct_items(items_in_string, '%2C')
         print(clicked_items)
         # GET MORE ITEMS FROM RECOMMENDATION SERVICE
         more_items = _refined_recommend_items("current_user", clicked_items)
-        response = make_response(render_template('search.html', items=more_items))
+        response = make_response(render_template('search.html', items=more_items, CPC_VALUES=common.CPC_VALUES))
         response.delete_cookie('clicked_items', path='/')
         return response
     return redirect('/')
@@ -105,8 +120,9 @@ def _get_form_fields():
     inputs = {}
     for key in common.SEARCH_FORM_FIELDS:
         if request.form.get(key):
-            print({'key': key})
             inputs[key] = request.form.get(key)
+        else:
+            inputs[key] = None
     return inputs
 
 
@@ -115,4 +131,11 @@ def _refined_recommend_items(username, clicked_items):
     for i in range(len(clicked_items)):
         result.append({})
     return result
+
+
+def get_distinct_items(items_in_string, delimiter):
+    items = items_in_string.split(delimiter)[:-1]
+    return list(set(items))
+
+
 

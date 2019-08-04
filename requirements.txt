@@ -31,3 +31,6 @@ typing==3.6.1
 wcwidth==0.1.7
 Werkzeug==0.12.1
 psycopg2==2.7.1
+pandas
+numpy
+nltk
