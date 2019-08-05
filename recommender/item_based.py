@@ -40,7 +40,7 @@ def search_similar_item_citation(patent_id):
     get the result dataframe
     """
     if patent_id not in list(patent_index.patent_id):
-        return []
+        return pd.DataFrame()
     sims = pairwise_jaccard(citation_matrix)
     idlist = get_neighbors(patent_id, sims, patent_index)
     temp = patent_sample.copy()

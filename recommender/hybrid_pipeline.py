@@ -216,32 +216,32 @@ def tfidf_weighted(word):
     return temp
 
 
-# In[28]:
+# In[50]:
 
 
 def hybrid_pipe(patent_id, after, before, kind, cpc, inventor,lawyer,assignee,sentence):
     cascade = search_patent(patent_id, after, before, kind, cpc, inventor,lawyer,assignee)
-    #cascade = temp['id'].tolist()
+    res_0 = cascade['id'].tolist()
     if sentence == None:
         res = cascade.copy()
     else:
         wordlist = re.sub("[^\w]", " ",  sentence).split()
-        temp = cascade.copy()
+        temp = pd.DataFrame()
         for i in range(len(wordlist)):
             temp[wordlist[i]] = tfidf_weighted(wordlist[i])['result_weighted']
     
         temp.loc[:,'Total'] = temp.sum(axis=1)
         temp = temp[['Total']]
     
+        #res = temp.sort_values(by="Total" , ascending=False)
         res = pd.concat([df, temp], axis=1).sort_values(by="Total" , ascending=False)
         res = res[(res['Total'] > 0)]
     
+    res_1 = res['id'].tolist()
+    reslist = list(set(res_1)&set(res_0))
+    
+    res = find_by_id(reslist)
+    
     return res
     
-
-
-# In[ ]:
-
-
-
 

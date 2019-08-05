@@ -110,7 +110,7 @@ def search():
             sentence=inputs[common.KEYWORDS])
         result = result.values.tolist()[:10]
         print("\n hybrid result {0}\n\n".format(result))
-        headline = "Top recommended patents"
+        headline = "Top recommended patents based on hybrid recommendation"
         return render_template('search.html', items=result, CPC_VALUES=common.CPC_VALUES,
                                page_headline=headline,
                                username=get_current_username)
@@ -142,8 +142,10 @@ def save_clicked_items():
     print(history)
     print("===============\n")
 
-    result = user_based.search_similar_user(username, history).values.tolist()
-    print("{0} {1}".format(type(result), result ))
+    result = user_based.search_similar_user(username, history)
+    print("User Based Click History result: {0}".format(result))
+    result = result.values.tolist()
+    print("type of result {0} with value {1}".format(type(result), result ))
     headline = "Refined recommendations based on {0}'s click history.".format(get_current_username())
 
     response = make_response(render_template('search.html',
@@ -161,7 +163,9 @@ def recommend_similar_patents():
     patent_id = request.args.get('patent_id')
     if patent_id:
         result = content_based_revised.tfidf_similarity(int(patent_id))
-        result = result.values.tolist()
+        print("Content Based Recom: {0}".format(result))
+        if len(result) > 0:
+            result = result.values.tolist()
         page_headline = "Similar patents for patent id {0} based on Content(TF_IDF) ".format(patent_id)
         return render_template('search.html', items=result,
                                CPC_VALUES=common.CPC_VALUES,
@@ -175,8 +179,11 @@ def recommend_related_items_based_on_citations():
     patent_id = request.args.get('patent_id')
     if patent_id:
         result = item_based.search_similar_item_citation(patent_id)
-        print("\n\n item based result: {0}".format(result))
-        result = result.values.tolist()
+        print("\n\n item based result: type {0} value {1}".format(type(result), result))
+        if not result.empty:
+            result = result.values.tolist()
+        else:
+            result = []
         page_headline = "Related patents for patent_id {0} (Item based Collaborative Filtering) ".format(patent_id)
         return render_template('search.html', items=result,
                                CPC_VALUES=common.CPC_VALUES,

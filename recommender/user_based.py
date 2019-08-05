@@ -47,14 +47,14 @@ def user_based_recommender(user, clicks):
 
     ui = users.index(user)
 
-    neighbors = [(i, x) for i,x in enumerate(corr[ui]) if x > 0 and i != ui]
+    neighbors = [(i, x) for i,x in enumerate(corr[ui]) if x > - 0.9 and i != ui]
     neighbors.sort(key=lambda x: x[1], reverse=True)
-    
+
     if not neighbors or len(neighbors) == 0:
         return []
     nn = neighbors[0][0]
     recomm_list = [ x for x in clicks[users[nn]] if x not in clicks[user] ]
-    
+
     return recomm_list
 
 """
