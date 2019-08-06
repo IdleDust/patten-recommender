@@ -9,6 +9,7 @@ Recommendation system powered by recommendation models.
 * sqlite
 * pandas
 
+# Instructions to Start the Application
 
 Install packages by
 
@@ -19,6 +20,10 @@ Set the env variable
 
 Initialize the sqlite db by
 `python manage.py initdb`
+
+Download the common stopwords by
+`python recommender/download.py`
+then select to download the `popular` section.
 
 Start the app by
 `python manage.py runserver`
