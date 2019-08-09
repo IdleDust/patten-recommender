@@ -144,7 +144,10 @@ def save_clicked_items():
 
     result = user_based.search_similar_user(username, history)
     print("User Based Click History result: {0}".format(result))
-    result = result.values.tolist()
+    if not result.empty:
+        result = result.values.tolist()
+    else:
+        result = []
     print("type of result {0} with value {1}".format(type(result), result ))
     headline = "Refined recommendations based on {0}'s click history.".format(get_current_username())
 
@@ -164,8 +167,10 @@ def recommend_similar_patents():
     if patent_id:
         result = content_based_revised.tfidf_similarity(int(patent_id))
         print("Content Based Recom: {0}".format(result))
-        if len(result) > 0:
+        if not result.empty:
             result = result.values.tolist()
+        else:
+            result = []
         page_headline = "Similar patents for patent id {0} based on Content(TF_IDF) ".format(patent_id)
         return render_template('search.html', items=result,
                                CPC_VALUES=common.CPC_VALUES,
